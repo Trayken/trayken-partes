@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trayken · Parte Diario</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Barlow', sans-serif; background: #0f1117; color: #e8e8e8; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #1a1d27; } ::-webkit-scrollbar-thumb { background: #e8320a; border-radius: 3px; }
+    input, select, textarea { background: #1a1d27; color: #e8e8e8; border: 1.5px solid #2a2d3a; border-radius: 8px; padding: 10px 14px; font-family: 'Barlow', sans-serif; font-size: 15px; width: 100%; transition: border-color 0.2s; outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: #e8320a; }
+    select option { background: #1a1d27; }
+    label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; color: #888; text-transform: uppercase; margin-bottom: 5px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 8px; font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.18s; }
+    .btn-primary { background: #e8320a; color: #fff; }
+    .btn-primary:hover { background: #ff4419; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(232,50,10,0.4); }
+    .btn-primary:disabled { background: #555; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-ghost { background: #1a1d27; color: #aaa; border: 1.5px solid #2a2d3a; }
+    .btn-ghost:hover { border-color: #e8320a; color: #e8320a; }
+    .card { background: #1a1d27; border-radius: 14px; border: 1px solid #23263a; padding: 24px; }
+    .tag { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; }
+    .tag-gtia { background: rgba(232,50,10,0.15); color: #e8320a; }
+    .tag-rep { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .tag-sal { background: rgba(16,185,129,0.15); color: #34d399; }
+    .tag-mtm { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .tag-usa { background: rgba(167,139,250,0.15); color: #a78bfa; }
+    @keyframes fadeUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
+    .fade-up { animation: fadeUp 0.4s ease; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #666; padding: 8px 12px; border-bottom: 1px solid #23263a; }
+    td { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #1e2133; vertical-align: top; }
+    tr:hover td { background: rgba(232,50,10,0.04); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    @media (max-width: 600px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxl0XsnscyDK7MQG_FDPMCaHVFLWQnmhDSWwOLgpie9og8K9z6gvbBJffG9kWirzvZN/exec";
+    const STORAGE_KEY = "trayken_partes";
+
+    const TECNICOS = ["Emiliano Javier Ponce","Edgar Leonardo Tapia","Yael Agustín Pacheco Fernandez","Ignacio Matamales","Maximiliano Perez","Otro"];
+    const TIPOS_OS = ["SAL","REP","GTIA","MTM","USA"];
+    const SUCURSALES = ["General Pico","Trenque Lauquen","Otra"];
+    const TIPOS_HORAS = [
+      { key: "hs_gtia_normal", label: "Hs. Garantía Normal", igs: "Hs. Trabajadas Garantía Normal" },
+      { key: "hs_gtia_rev", label: "Hs. Garantía (Rev/PDI/ET)", igs: "Hs. Trabajadas Garantía (Rev, Pdi, Et)" },
+      { key: "hs_taller", label: "Hs. Taller", igs: "Hs. Trabajadas Taller" },
+      { key: "hs_campo", label: "Hs. Campo", igs: "Hs. Trabajadas Campo" },
+      { key: "hs_traslado", label: "Hs. Traslado", igs: "Hs. Trabajadas Traslado" },
+      { key: "hs_internas", label: "Hs. Internas", igs: "Hs. Trabajadas Internas" },
+      { key: "hs_capacitacion", label: "Hs. Capacitación", igs: "Hs. Capacitaciones" },
+      { key: "hs_retrabajo", label: "Hs. Retrabajo", igs: "Hs. Retrabajo" },
+      { key: "hs_refrigerio", label: "Hs. Refrigerio", igs: "Hs. Refrigerios" },
+    ];
+
+    const emptyForm = () => ({
+      tecnico: "", tecnico_custom: "", fecha: new Date().toISOString().split("T")[0],
+      sucursal: "", tipo_os: "", guardia: "No", cliente: "", maquina: "", falla: "", observaciones: "",
+      ...Object.fromEntries(TIPOS_HORAS.map(t => [t.key, ""])),
+    });
+
+    function loadPartes() {
+      try { const d = localStorage.getItem(STORAGE_KEY); return d ? JSON.parse(d) : []; } catch { return []; }
+    }
+    function savePartes(p) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {} }
+
+    function enviarASheets(data) {
+      return new Promise((resolve, reject) => {
+        const cb = "cb_" + Date.now();
+        const script = document.createElement("script");
+        const encoded = encodeURIComponent(JSON.stringify(data));
+        script.src = `${SHEETS_URL}?callback=${cb}&data=${encoded}`;
+        script.onerror = () => reject(new Error("network"));
+        window[cb] = (res) => {
+          delete window[cb];
+          try { document.body.removeChild(script); } catch {}
+          res.ok ? resolve() : reject(new Error(res.error));
+        };
+        setTimeout(() => {
+          if (window[cb]) { delete window[cb]; try { document.body.removeChild(script); } catch {} reject(new Error("timeout")); }
+        }, 10000);
+        document.body.appendChild(script);
+      });
+    }
+
+    function App() {
+      const [view, setView] = useState("form");
+      const [form, setForm] = useState(emptyForm());
+      const [partes, setPartes] = useState([]);
+      const [submitted, setSubmitted] = useState(false);
+      const [saving, setSaving] = useState(false);
+      const [syncStatus, setSyncStatus] = useState(null);
+      const [filterMes, setFilterMes] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; });
+      const [aiSummary, setAiSummary] = useState("");
+      const [loadingAI, setLoadingAI] = useState(false);
+
+      useEffect(() => { setPartes(loadPartes()); }, []);
+
+      const handleChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+
+      const handleSubmit = async () => {
+        if (!form.tecnico || !form.fecha || !form.sucursal || !form.tipo_os || !form.cliente || !form.maquina) {
+          alert("Completá: técnico, fecha, sucursal, tipo OS, cliente y máquina."); return;
+        }
+        setSaving(true); setSyncStatus(null);
+        const nuevo = { ...form, tecnico: form.tecnico === "Otro" ? form.tecnico_custom : form.tecnico, id: Date.now() };
+        const nuevos = [...partes, nuevo];
+        setPartes(nuevos); savePartes(nuevos);
+        try { await enviarASheets(nuevo); setSyncStatus("ok"); } catch { setSyncStatus("error"); }
+        setSaving(false); setSubmitted(true);
+        setTimeout(() => { setSubmitted(false); setSyncStatus(null); setForm(emptyForm()); }, 3500);
+      };
+
+      const partesDelMes = partes.filter(p => p.fecha?.startsWith(filterMes));
+      const totalesIGS = TIPOS_HORAS.reduce((acc, t) => { acc[t.key] = partesDelMes.reduce((s, p) => s + (parseFloat(p[t.key]) || 0), 0); return acc; }, {});
+
+      const exportarCSV = () => {
+        if (!partesDelMes.length) return;
+        const headers = ["Técnico","Fecha","Sucursal","Tipo OS","Guardia","Cliente","Máquina","Falla","Observaciones",...TIPOS_HORAS.map(t=>t.label)];
+        const rows = partesDelMes.map(p => [p.tecnico,p.fecha,p.sucursal,p.tipo_os,p.guardia,p.cliente,p.maquina,p.falla,p.observaciones,...TIPOS_HORAS.map(t=>p[t.key]||0)]);
+        const csv = [headers,...rows].map(r=>r.map(c=>`"${String(c||"").replace(/"/g,'""')}"`).join(",")).join("\n");
+        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+        a.download = `partes_${filterMes}.csv`; a.click();
+      };
+
+      const tabs = [{ id:"form", label:"✏️ Cargar Parte" },{ id:"resumen", label:"📊 Resumen IGS" },{ id:"admin", label:"🗂️ Historial" }];
+
+      return (
+        <div>
+          {/* Header */}
+          <div style={{background:"#13161f",borderBottom:"1px solid #23263a",padding:"0 20px"}}>
+            <div style={{maxWidth:900,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:64}}>
+              <div style={{display:"flex",alignItems:"center",gap:14}}>
+                <div style={{width:36,height:36,background:"#e8320a",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🔧</div>
+                <div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:18,letterSpacing:"0.04em",lineHeight:1}}>TRAYKEN</div>
+                  <div style={{fontSize:11,color:"#666",letterSpacing:"0.1em",textTransform:"uppercase"}}>Parte Diario · IGS CNH</div>
+                </div>
+              </div>
+              <div style={{fontSize:12,color:"#555"}}>{new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>
+            </div>
+            <div style={{maxWidth:900,margin:"0 auto",display:"flex",gap:4}}>
+              {tabs.map(t => (
+                <button key={t.id} onClick={()=>setView(t.id)} style={{background:"none",border:"none",cursor:"pointer",padding:"10px 16px",fontFamily:"'Barlow',sans-serif",fontWeight:600,fontSize:14,color:view===t.id?"#e8320a":"#666",borderBottom:`2px solid ${view===t.id?"#e8320a":"transparent"}`,transition:"all 0.18s"}}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{maxWidth:900,margin:"0 auto",padding:"28px 20px"}}>
+
+            {/* === FORM === */}
+            {view==="form" && (
+              <div className="fade-up">
+                {submitted ? (
+                  <div className="card" style={{textAlign:"center",padding:"60px 24px"}}>
+                    <div style={{fontSize:56,marginBottom:16}}>✅</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:28,color:"#34d399"}}>¡Parte cargado!</div>
+                    <div style={{color:"#666",marginTop:8}}>Guardado en el dispositivo</div>
+                    <div style={{marginTop:16,fontSize:14}}>
+                      {syncStatus==="ok" && <span style={{color:"#34d399"}}>☁️ Sincronizado con Google Sheets</span>}
+                      {syncStatus==="error" && <span style={{color:"#fbbf24"}}>⚠️ Sin conexión — guardado solo localmente</span>}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{display:"flex",flexDirection:"column",gap:20}}>
+                    <div className="card">
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:20,marginBottom:20,color:"#e8320a",letterSpacing:"0.04em"}}>DATOS GENERALES</div>
+                      <div className="grid-2">
+                        <div>
+                          <label>Técnico *</label>
+                          <select name="tecnico" value={form.tecnico} onChange={handleChange}>
+                            <option value="">— Seleccioná —</option>
+                            {TECNICOS.map(t=><option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                        {form.tecnico==="Otro" && <div><label>Nombre completo</label><input name="tecnico_custom" value={form.tecnico_custom} onChange={handleChange} placeholder="Ingresá el nombre"/></div>}
+                        <div><label>Fecha *</label><input type="date" name="fecha" value={form.fecha} onChange={handleChange}/></div>
+                        <div>
+                          <label>Sucursal *</label>
+                          <select name="sucursal" value={form.sucursal} onChange={handleChange}>
+                            <option value="">— Seleccioná —</option>
+                            {SUCURSALES.map(s=><option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label>Tipo de OS *</label>
+                          <select name="tipo_os" value={form.tipo_os} onChange={handleChange}>
+                            <option value="">— Seleccioná —</option>
+                            {TIPOS_OS.map(t=><option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label>¿Es guardia?</label>
+                          <div style={{display:"flex",gap:10,marginTop:2}}>
+                            {["No","Sí"].map(op=>(
+                              <button key={op} type="button" onClick={()=>setForm(f=>({...f,guardia:op}))}
+                                style={{flex:1,padding:"10px",border:`2px solid ${form.guardia===op?(op==="Sí"?"#e8320a":"#555"):"#2a2d3a"}`,borderRadius:8,background:form.guardia===op?(op==="Sí"?"rgba(232,50,10,0.15)":"#23263a"):"#1a1d27",color:form.guardia===op?(op==="Sí"?"#e8320a":"#e8e8e8"):"#666",fontFamily:"'Barlow',sans-serif",fontWeight:700,fontSize:15,cursor:"pointer",transition:"all 0.18s"}}>
+                                {op==="Sí"?"🚨 Sí":"✅ No"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div><label>Cliente *</label><input name="cliente" value={form.cliente} onChange={handleChange} placeholder="Nombre del cliente"/></div>
+                        <div><label>Máquina *</label><input name="maquina" value={form.maquina} onChange={handleChange} placeholder="Ej: New Holland T6.180"/></div>
+                      </div>
+                      <div style={{marginTop:16}}><label>Falla / Motivo</label><input name="falla" value={form.falla} onChange={handleChange} placeholder="Describí la falla"/></div>
+                      <div style={{marginTop:16}}><label>Observaciones</label><textarea name="observaciones" value={form.observaciones} onChange={handleChange} rows={3} placeholder="Detalle adicional..." style={{resize:"vertical"}}/></div>
+                    </div>
+
+                    <div className="card">
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:20,marginBottom:6,color:"#e8320a",letterSpacing:"0.04em"}}>HORAS TRABAJADAS</div>
+                      <div style={{fontSize:12,color:"#555",marginBottom:20}}>Alimentan directamente el IGS de CNH · Dejá en 0 lo que no aplica</div>
+                      <div className="grid-3">
+                        {TIPOS_HORAS.map(t=>(
+                          <div key={t.key}><label>{t.label}</label><input type="number" name={t.key} value={form[t.key]} onChange={handleChange} placeholder="0" min="0" step="0.5"/></div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button className="btn btn-primary" onClick={handleSubmit} disabled={saving} style={{width:"100%",padding:"16px",fontSize:16}}>
+                      {saving?"⏳ Guardando y sincronizando...":"💾 Guardar Parte Diario"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* === RESUMEN IGS === */}
+            {view==="resumen" && (
+              <div className="fade-up" style={{display:"flex",flexDirection:"column",gap:20}}>
+                <div className="card" style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+                  <div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:22,letterSpacing:"0.04em"}}>RESUMEN PARA IGS CNH</div>
+                    <div style={{fontSize:12,color:"#555",marginTop:2}}>Totales acumulados listos para cargar en el Excel</div>
+                  </div>
+                  <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                    <input type="month" value={filterMes} onChange={e=>setFilterMes(e.target.value)} style={{width:"auto"}}/>
+                    <button className="btn btn-ghost" onClick={exportarCSV}>⬇️ Exportar CSV</button>
+                  </div>
+                </div>
+                <div className="grid-3">
+                  {[
+                    {label:"Partes del mes",val:partesDelMes.length,icon:"📋"},
+                    {label:"Técnicos activos",val:[...new Set(partesDelMes.map(p=>p.tecnico))].length,icon:"👷"},
+                    {label:"Total horas",val:TIPOS_HORAS.reduce((s,t)=>s+(totalesIGS[t.key]||0),0).toFixed(1)+" hs",icon:"⏱️"},
+                  ].map(s=>(
+                    <div key={s.label} className="card" style={{textAlign:"center"}}>
+                      <div style={{fontSize:28,marginBottom:6}}>{s.icon}</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:28,color:"#e8320a"}}>{s.val}</div>
+                      <div style={{fontSize:12,color:"#666",marginTop:2}}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="card">
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:18,marginBottom:16,letterSpacing:"0.04em"}}>📋 HORAS → IGS "GESTIÓN DE HORAS"</div>
+                  <table>
+                    <thead><tr><th>Campo en el IGS</th><th>Total acumulado</th><th>Distribución</th></tr></thead>
+                    <tbody>
+                      {TIPOS_HORAS.map(t=>{
+                        const total = TIPOS_HORAS.reduce((s,tt)=>s+(totalesIGS[tt.key]||0),0);
+                        const pct = total>0?((totalesIGS[t.key]/total)*100).toFixed(1):0;
+                        return (
+                          <tr key={t.key}>
+                            <td style={{color:"#aaa"}}>{t.igs}</td>
+                            <td style={{fontWeight:700,color:totalesIGS[t.key]>0?"#e8e8e8":"#444"}}>{totalesIGS[t.key]>0?`${totalesIGS[t.key].toFixed(1)} hs`:"—"}</td>
+                            <td>{totalesIGS[t.key]>0&&<div style={{display:"flex",alignItems:"center",gap:8}}><div style={{height:6,borderRadius:3,background:"#23263a",flex:1}}><div style={{height:"100%",borderRadius:3,background:"#e8320a",width:`${pct}%`}}/></div><span style={{fontSize:12,color:"#666",minWidth:36}}>{pct}%</span></div>}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {partesDelMes.length===0&&<div className="card" style={{textAlign:"center",padding:"48px 24px",color:"#444"}}><div style={{fontSize:40,marginBottom:12}}>📭</div><div>No hay partes para este mes</div></div>}
+              </div>
+            )}
+
+            {/* === HISTORIAL === */}
+            {view==="admin" && (
+              <div className="fade-up" style={{display:"flex",flexDirection:"column",gap:20}}>
+                <div className="card" style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+                  <div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:22,letterSpacing:"0.04em"}}>HISTORIAL DE PARTES</div>
+                    <div style={{fontSize:12,color:"#555",marginTop:2}}>{partes.length} partes en total</div>
+                  </div>
+                  <input type="month" value={filterMes} onChange={e=>setFilterMes(e.target.value)} style={{width:"auto"}}/>
+                </div>
+                {partesDelMes.length===0?(
+                  <div className="card" style={{textAlign:"center",padding:"48px 24px",color:"#444"}}><div style={{fontSize:40,marginBottom:12}}>📭</div><div>No hay partes para este período</div></div>
+                ):(
+                  <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                    {[...partesDelMes].reverse().map(p=>{
+                      const tagClass={GTIA:"tag-gtia",REP:"tag-rep",SAL:"tag-sal",MTM:"tag-mtm",USA:"tag-usa"}[p.tipo_os]||"tag-rep";
+                      const totalHs=TIPOS_HORAS.reduce((s,t)=>s+(parseFloat(p[t.key])||0),0);
+                      return (
+                        <div key={p.id} className="card" style={{padding:"18px 22px"}}>
+                          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+                            <div style={{flex:1}}>
+                              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,flexWrap:"wrap"}}>
+                                <span className={`tag ${tagClass}`}>{p.tipo_os}</span>
+                                {p.guardia==="Sí"&&<span className="tag" style={{background:"rgba(232,50,10,0.15)",color:"#e8320a"}}>🚨 Guardia</span>}
+                                <span style={{fontWeight:700,fontSize:15}}>{p.tecnico}</span>
+                                <span style={{color:"#555",fontSize:13}}>{new Date(p.fecha+"T12:00:00").toLocaleDateString("es-AR",{day:"numeric",month:"short"})}</span>
+                                {p.sucursal&&<span style={{fontSize:12,color:"#555",marginLeft:"auto"}}>📍 {p.sucursal}</span>}
+                              </div>
+                              <div style={{fontSize:14,color:"#aaa"}}><span style={{color:"#e8e8e8",fontWeight:500}}>{p.cliente}</span>{p.maquina&&<span style={{color:"#666"}}> · {p.maquina}</span>}</div>
+                              {p.falla&&<div style={{fontSize:13,color:"#666",marginTop:4}}>🔴 {p.falla}</div>}
+                              {p.observaciones&&<div style={{fontSize:12,color:"#555",marginTop:4,fontStyle:"italic"}}>{p.observaciones}</div>}
+                            </div>
+                            {totalHs>0&&<div style={{textAlign:"right",minWidth:70}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:26,color:"#e8320a",lineHeight:1}}>{totalHs.toFixed(1)}</div><div style={{fontSize:11,color:"#555",letterSpacing:"0.08em"}}>HS TOTAL</div></div>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
+</body>
+</html>
