@@ -19,9 +19,12 @@
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 8px; font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.18s; }
     .btn-primary { background: #e8320a; color: #fff; }
     .btn-primary:hover { background: #ff4419; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(232,50,10,0.4); }
-    .btn-primary:disabled { background: #555; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-primary:disabled { background: #444; cursor: not-allowed; transform: none; box-shadow: none; }
     .btn-ghost { background: #1a1d27; color: #aaa; border: 1.5px solid #2a2d3a; }
     .btn-ghost:hover { border-color: #e8320a; color: #e8320a; }
+    .btn-warning { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1.5px solid rgba(251,191,36,0.3); font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 13px; cursor: pointer; border-radius: 8px; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.18s; }
+    .btn-warning:hover { background: rgba(251,191,36,0.25); }
+    .btn-warning:disabled { opacity: 0.6; cursor: not-allowed; }
     .card { background: #1a1d27; border-radius: 14px; border: 1px solid #23263a; padding: 24px; }
     .tag { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; }
     .tag-gtia { background: rgba(232,50,10,0.15); color: #e8320a; }
@@ -33,7 +36,7 @@
     .fade-up { animation: fadeUp 0.4s ease; }
     table { width: 100%; border-collapse: collapse; }
     th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #666; padding: 8px 12px; border-bottom: 1px solid #23263a; }
-    td { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #1e2133; vertical-align: top; }
+    td { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #1e2133; vertical-align: middle; }
     tr:hover td { background: rgba(232,50,10,0.04); }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
@@ -47,99 +50,119 @@
 
     const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxl0XsnscyDK7MQG_FDPMCaHVFLWQnmhDSWwOLgpie9og8K9z6gvbBJffG9kWirzvZN/exec";
     const STORAGE_KEY = "trayken_partes";
+    const TECNICO_KEY = "trayken_ultimo_tecnico";
 
-    const TECNICOS = ["Emiliano Javier Ponce","Edgar Leonardo Tapia","Yael Agustín Pacheco Fernandez","Ignacio Matamales","Maximiliano Perez","Otro"];
+    const TECNICOS = [
+      "Emiliano Javier Ponce","Edgar Leonardo Tapia","Yael Agustín Pacheco Fernandez",
+      "Ignacio Matamales","Maximiliano Perez","Julian Gomez","Juan Nuñez",
+      "Matias Planes","Martin Parra","Fidel Urtizberea","Agustin Quiruelas",
+      "Brian Salamanques","Sergio Rivero","Andres Conejo","Otro",
+    ];
     const TIPOS_OS = ["SAL","REP","GTIA","MTM","USA"];
-    const SUCURSALES = ["General Pico","Trenque Lauquen","Otra"];
+    const SUCURSALES = ["General Pico","Trenque Lauquen","Macachin","General Villegas","Otra"];
     const TIPOS_HORAS = [
-      { key: "hs_gtia_normal", label: "Hs. Garantía Normal", igs: "Hs. Trabajadas Garantía Normal" },
-      { key: "hs_gtia_rev", label: "Hs. Garantía (Rev/PDI/ET)", igs: "Hs. Trabajadas Garantía (Rev, Pdi, Et)" },
-      { key: "hs_taller", label: "Hs. Taller", igs: "Hs. Trabajadas Taller" },
-      { key: "hs_campo", label: "Hs. Campo", igs: "Hs. Trabajadas Campo" },
-      { key: "hs_traslado", label: "Hs. Traslado", igs: "Hs. Trabajadas Traslado" },
-      { key: "hs_internas", label: "Hs. Internas", igs: "Hs. Trabajadas Internas" },
-      { key: "hs_capacitacion", label: "Hs. Capacitación", igs: "Hs. Capacitaciones" },
-      { key: "hs_retrabajo", label: "Hs. Retrabajo", igs: "Hs. Retrabajo" },
-      { key: "hs_refrigerio", label: "Hs. Refrigerio", igs: "Hs. Refrigerios" },
+      { key:"hs_gtia_normal",  label:"Hs. Garantía Normal",       igs:"Hs. Trabajadas Garantía Normal" },
+      { key:"hs_gtia_rev",     label:"Hs. Garantía (Rev/PDI/ET)", igs:"Hs. Trabajadas Garantía (Rev, Pdi, Et)" },
+      { key:"hs_taller",       label:"Hs. Taller",                igs:"Hs. Trabajadas Taller" },
+      { key:"hs_campo",        label:"Hs. Campo",                 igs:"Hs. Trabajadas Campo" },
+      { key:"hs_traslado",     label:"Hs. Traslado",              igs:"Hs. Trabajadas Traslado" },
+      { key:"hs_internas",     label:"Hs. Internas",              igs:"Hs. Trabajadas Internas" },
+      { key:"hs_capacitacion", label:"Hs. Capacitación",          igs:"Hs. Capacitaciones" },
+      { key:"hs_retrabajo",    label:"Hs. Retrabajo",             igs:"Hs. Retrabajo" },
+      { key:"hs_refrigerio",   label:"Hs. Refrigerio",            igs:"Hs. Refrigerios" },
     ];
 
-    const emptyForm = () => ({
-      tecnico: "", tecnico_custom: "", fecha: new Date().toISOString().split("T")[0],
-      sucursal: "", tipo_os: "", guardia: "No", cliente: "", maquina: "", falla: "", observaciones: "",
-      ...Object.fromEntries(TIPOS_HORAS.map(t => [t.key, ""])),
+    const emptyForm = (tecnico="") => ({
+      tecnico, tecnico_custom:"", fecha:new Date().toISOString().split("T")[0],
+      sucursal:"", tipo_os:"", guardia:"No", cliente:"", maquina:"", falla:"", observaciones:"",
+      ...Object.fromEntries(TIPOS_HORAS.map(t=>[t.key,""])),
     });
 
-    function loadPartes() {
-      try { const d = localStorage.getItem(STORAGE_KEY); return d ? JSON.parse(d) : []; } catch { return []; }
-    }
-    function savePartes(p) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {} }
+    const loadPartes = () => { try { const d=localStorage.getItem(STORAGE_KEY); return d?JSON.parse(d):[]; } catch { return []; } };
+    const savePartes = p => { try { localStorage.setItem(STORAGE_KEY,JSON.stringify(p)); } catch {} };
+    const loadUltimoTecnico = () => { try { return localStorage.getItem(TECNICO_KEY)||""; } catch { return ""; } };
+    const saveUltimoTecnico = t => { try { localStorage.setItem(TECNICO_KEY,t); } catch {} };
 
-    function enviarASheets(data) {
-      return new Promise((resolve, reject) => {
-        const cb = "cb_" + Date.now();
-        const script = document.createElement("script");
-        const encoded = encodeURIComponent(JSON.stringify(data));
-        script.src = `${SHEETS_URL}?callback=${cb}&data=${encoded}`;
-        script.onerror = () => reject(new Error("network"));
-        window[cb] = (res) => {
-          delete window[cb];
-          try { document.body.removeChild(script); } catch {}
-          res.ok ? resolve() : reject(new Error(res.error));
-        };
-        setTimeout(() => {
-          if (window[cb]) { delete window[cb]; try { document.body.removeChild(script); } catch {} reject(new Error("timeout")); }
-        }, 10000);
-        document.body.appendChild(script);
-      });
-    }
+    const enviarASheets = data => new Promise((resolve,reject) => {
+      const cb="cb_"+Date.now();
+      const script=document.createElement("script");
+      script.src=`${SHEETS_URL}?callback=${cb}&data=${encodeURIComponent(JSON.stringify(data))}`;
+      script.onerror=()=>reject(new Error("network"));
+      window[cb]=res=>{ delete window[cb]; try{document.body.removeChild(script);}catch{} res.ok?resolve():reject(new Error(res.error)); };
+      setTimeout(()=>{ if(window[cb]){delete window[cb];try{document.body.removeChild(script);}catch{}reject(new Error("timeout"));} },10000);
+      document.body.appendChild(script);
+    });
 
     function App() {
       const [view, setView] = useState("form");
-      const [form, setForm] = useState(emptyForm());
+      const [form, setForm] = useState(()=>emptyForm(loadUltimoTecnico()));
       const [partes, setPartes] = useState([]);
       const [submitted, setSubmitted] = useState(false);
       const [saving, setSaving] = useState(false);
       const [syncStatus, setSyncStatus] = useState(null);
-      const [filterMes, setFilterMes] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; });
-      const [aiSummary, setAiSummary] = useState("");
-      const [loadingAI, setLoadingAI] = useState(false);
+      const [resyncing, setResyncing] = useState(false);
+      const [resyncResult, setResyncResult] = useState(null);
+      const [filterMes, setFilterMes] = useState(()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; });
 
-      useEffect(() => { setPartes(loadPartes()); }, []);
+      useEffect(()=>{ setPartes(loadPartes()); },[]);
 
-      const handleChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+      const pendientes = partes.filter(p=>p.syncPending);
+
+      const handleChange = e => {
+        const {name,value}=e.target;
+        setForm(f=>({...f,[name]:value}));
+        if(name==="tecnico"&&value!=="Otro") saveUltimoTecnico(value);
+      };
 
       const handleSubmit = async () => {
-        if (!form.tecnico || !form.fecha || !form.sucursal || !form.tipo_os || !form.cliente || !form.maquina) {
+        if(!form.tecnico||!form.fecha||!form.sucursal||!form.tipo_os||!form.cliente||!form.maquina){
           alert("Completá: técnico, fecha, sucursal, tipo OS, cliente y máquina."); return;
         }
         setSaving(true); setSyncStatus(null);
-        const nuevo = { ...form, tecnico: form.tecnico === "Otro" ? form.tecnico_custom : form.tecnico, id: Date.now() };
-        const nuevos = [...partes, nuevo];
+        const nuevo={...form, tecnico:form.tecnico==="Otro"?form.tecnico_custom:form.tecnico, id:Date.now(), syncPending:false};
+        let synced=true;
+        try { await enviarASheets(nuevo); } catch { synced=false; nuevo.syncPending=true; }
+        const nuevos=[...partes,nuevo];
         setPartes(nuevos); savePartes(nuevos);
-        try { await enviarASheets(nuevo); setSyncStatus("ok"); } catch { setSyncStatus("error"); }
+        setSyncStatus(synced?"ok":"error");
         setSaving(false); setSubmitted(true);
-        setTimeout(() => { setSubmitted(false); setSyncStatus(null); setForm(emptyForm()); }, 3500);
+        setTimeout(()=>{ setSubmitted(false); setSyncStatus(null); setForm(emptyForm(form.tecnico==="Otro"?"":form.tecnico)); },3500);
       };
 
-      const partesDelMes = partes.filter(p => p.fecha?.startsWith(filterMes));
-      const totalesIGS = TIPOS_HORAS.reduce((acc, t) => { acc[t.key] = partesDelMes.reduce((s, p) => s + (parseFloat(p[t.key]) || 0), 0); return acc; }, {});
-
-      const exportarCSV = () => {
-        if (!partesDelMes.length) return;
-        const headers = ["Técnico","Fecha","Sucursal","Tipo OS","Guardia","Cliente","Máquina","Falla","Observaciones",...TIPOS_HORAS.map(t=>t.label)];
-        const rows = partesDelMes.map(p => [p.tecnico,p.fecha,p.sucursal,p.tipo_os,p.guardia,p.cliente,p.maquina,p.falla,p.observaciones,...TIPOS_HORAS.map(t=>p[t.key]||0)]);
-        const csv = [headers,...rows].map(r=>r.map(c=>`"${String(c||"").replace(/"/g,'""')}"`).join(",")).join("\n");
-        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
-        a.download = `partes_${filterMes}.csv`; a.click();
+      const reenviarPendientes = async () => {
+        if(!pendientes.length) return;
+        setResyncing(true); setResyncResult(null);
+        let ok=0,fail=0;
+        const updated=[...partes];
+        for(const p of pendientes){
+          try{ await enviarASheets(p); const i=updated.findIndex(x=>x.id===p.id); if(i!==-1) updated[i]={...updated[i],syncPending:false}; ok++; }
+          catch{ fail++; }
+        }
+        setPartes(updated); savePartes(updated);
+        setResyncResult({ok,fail}); setResyncing(false);
+        setTimeout(()=>setResyncResult(null),4000);
       };
 
-      const tabs = [{ id:"form", label:"✏️ Cargar Parte" },{ id:"resumen", label:"📊 Resumen IGS" },{ id:"admin", label:"🗂️ Historial" }];
+      const partesDelMes=partes.filter(p=>p.fecha?.startsWith(filterMes));
+      const totalesIGS=TIPOS_HORAS.reduce((acc,t)=>{ acc[t.key]=partesDelMes.reduce((s,p)=>s+(parseFloat(p[t.key])||0),0); return acc; },{});
+      const horasPorTecnico=partesDelMes.reduce((acc,p)=>{ const hs=TIPOS_HORAS.reduce((s,t)=>s+(parseFloat(p[t.key])||0),0); acc[p.tecnico]=(acc[p.tecnico]||0)+hs; return acc; },{});
+      const tecnicosOrdenados=Object.entries(horasPorTecnico).sort((a,b)=>b[1]-a[1]);
+
+      const exportarCSV=()=>{
+        if(!partesDelMes.length) return;
+        const headers=["Técnico","Fecha","Sucursal","Tipo OS","Guardia","Cliente","Máquina","Falla","Observaciones",...TIPOS_HORAS.map(t=>t.label),"Sincronizado"];
+        const rows=partesDelMes.map(p=>[p.tecnico,p.fecha,p.sucursal,p.tipo_os,p.guardia,p.cliente,p.maquina,p.falla||"",p.observaciones||"",...TIPOS_HORAS.map(t=>p[t.key]||0),p.syncPending?"No":"Sí"]);
+        const csv=[headers,...rows].map(r=>r.map(c=>`"${String(c||"").replace(/"/g,'""')}"`).join(",")).join("\n");
+        const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+        a.download=`partes_${filterMes}.csv`; a.click();
+      };
+
+      const tabs=[{id:"form",label:"✏️ Cargar Parte"},{id:"resumen",label:"📊 Resumen IGS"},{id:"admin",label:"🗂️ Historial"}];
 
       return (
         <div>
-          {/* Header */}
           <div style={{background:"#13161f",borderBottom:"1px solid #23263a",padding:"0 20px"}}>
-            <div style={{maxWidth:900,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:64}}>
+            <div style={{maxWidth:900,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:64,flexWrap:"wrap",gap:8}}>
               <div style={{display:"flex",alignItems:"center",gap:14}}>
                 <div style={{width:36,height:36,background:"#e8320a",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🔧</div>
                 <div>
@@ -147,10 +170,22 @@
                   <div style={{fontSize:11,color:"#666",letterSpacing:"0.1em",textTransform:"uppercase"}}>Parte Diario · IGS CNH</div>
                 </div>
               </div>
-              <div style={{fontSize:12,color:"#555"}}>{new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>
+              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                {pendientes.length>0&&(
+                  <button className="btn-warning" onClick={reenviarPendientes} disabled={resyncing}>
+                    {resyncing?"⏳ Reenviando...":` 🔄 Reenviar pendientes (${pendientes.length})`}
+                  </button>
+                )}
+                {resyncResult&&(
+                  <span style={{fontSize:13,color:resyncResult.fail===0?"#34d399":"#fbbf24"}}>
+                    {resyncResult.fail===0?`✅ ${resyncResult.ok} enviados`:`✅ ${resyncResult.ok} ok · ⚠️ ${resyncResult.fail} fallaron`}
+                  </span>
+                )}
+                <div style={{fontSize:12,color:"#555"}}>{new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>
+              </div>
             </div>
             <div style={{maxWidth:900,margin:"0 auto",display:"flex",gap:4}}>
-              {tabs.map(t => (
+              {tabs.map(t=>(
                 <button key={t.id} onClick={()=>setView(t.id)} style={{background:"none",border:"none",cursor:"pointer",padding:"10px 16px",fontFamily:"'Barlow',sans-serif",fontWeight:600,fontSize:14,color:view===t.id?"#e8320a":"#666",borderBottom:`2px solid ${view===t.id?"#e8320a":"transparent"}`,transition:"all 0.18s"}}>
                   {t.label}
                 </button>
@@ -160,20 +195,19 @@
 
           <div style={{maxWidth:900,margin:"0 auto",padding:"28px 20px"}}>
 
-            {/* === FORM === */}
-            {view==="form" && (
+            {view==="form"&&(
               <div className="fade-up">
-                {submitted ? (
+                {submitted?(
                   <div className="card" style={{textAlign:"center",padding:"60px 24px"}}>
                     <div style={{fontSize:56,marginBottom:16}}>✅</div>
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:28,color:"#34d399"}}>¡Parte cargado!</div>
                     <div style={{color:"#666",marginTop:8}}>Guardado en el dispositivo</div>
                     <div style={{marginTop:16,fontSize:14}}>
-                      {syncStatus==="ok" && <span style={{color:"#34d399"}}>☁️ Sincronizado con Google Sheets</span>}
-                      {syncStatus==="error" && <span style={{color:"#fbbf24"}}>⚠️ Sin conexión — guardado solo localmente</span>}
+                      {syncStatus==="ok"&&<span style={{color:"#34d399"}}>☁️ Sincronizado con Google Sheets</span>}
+                      {syncStatus==="error"&&<span style={{color:"#fbbf24"}}>⚠️ Sin conexión — quedó pendiente para reenviar</span>}
                     </div>
                   </div>
-                ) : (
+                ):(
                   <div style={{display:"flex",flexDirection:"column",gap:20}}>
                     <div className="card">
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:20,marginBottom:20,color:"#e8320a",letterSpacing:"0.04em"}}>DATOS GENERALES</div>
@@ -184,8 +218,9 @@
                             <option value="">— Seleccioná —</option>
                             {TECNICOS.map(t=><option key={t} value={t}>{t}</option>)}
                           </select>
+                          {form.tecnico&&form.tecnico!=="Otro"&&<div style={{fontSize:11,color:"#555",marginTop:5}}>✓ Recordado en este dispositivo</div>}
                         </div>
-                        {form.tecnico==="Otro" && <div><label>Nombre completo</label><input name="tecnico_custom" value={form.tecnico_custom} onChange={handleChange} placeholder="Ingresá el nombre"/></div>}
+                        {form.tecnico==="Otro"&&<div><label>Nombre completo</label><input name="tecnico_custom" value={form.tecnico_custom} onChange={handleChange} placeholder="Ingresá el nombre"/></div>}
                         <div><label>Fecha *</label><input type="date" name="fecha" value={form.fecha} onChange={handleChange}/></div>
                         <div>
                           <label>Sucursal *</label>
@@ -218,7 +253,6 @@
                       <div style={{marginTop:16}}><label>Falla / Motivo</label><input name="falla" value={form.falla} onChange={handleChange} placeholder="Describí la falla"/></div>
                       <div style={{marginTop:16}}><label>Observaciones</label><textarea name="observaciones" value={form.observaciones} onChange={handleChange} rows={3} placeholder="Detalle adicional..." style={{resize:"vertical"}}/></div>
                     </div>
-
                     <div className="card">
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:20,marginBottom:6,color:"#e8320a",letterSpacing:"0.04em"}}>HORAS TRABAJADAS</div>
                       <div style={{fontSize:12,color:"#555",marginBottom:20}}>Alimentan directamente el IGS de CNH · Dejá en 0 lo que no aplica</div>
@@ -228,7 +262,6 @@
                         ))}
                       </div>
                     </div>
-
                     <button className="btn btn-primary" onClick={handleSubmit} disabled={saving} style={{width:"100%",padding:"16px",fontSize:16}}>
                       {saving?"⏳ Guardando y sincronizando...":"💾 Guardar Parte Diario"}
                     </button>
@@ -237,8 +270,7 @@
               </div>
             )}
 
-            {/* === RESUMEN IGS === */}
-            {view==="resumen" && (
+            {view==="resumen"&&(
               <div className="fade-up" style={{display:"flex",flexDirection:"column",gap:20}}>
                 <div className="card" style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
                   <div>
@@ -263,15 +295,39 @@
                     </div>
                   ))}
                 </div>
+
+                {tecnicosOrdenados.length>0&&(
+                  <div className="card">
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:18,marginBottom:16,letterSpacing:"0.04em"}}>👷 HORAS POR TÉCNICO</div>
+                    <table>
+                      <thead><tr><th>Técnico</th><th>Horas</th><th>Partes</th><th>Distribución</th></tr></thead>
+                      <tbody>
+                        {tecnicosOrdenados.map(([tecnico,hs])=>{
+                          const maxHs=tecnicosOrdenados[0][1];
+                          const cant=partesDelMes.filter(p=>p.tecnico===tecnico).length;
+                          return(
+                            <tr key={tecnico}>
+                              <td style={{fontWeight:600}}>{tecnico}</td>
+                              <td style={{fontWeight:700,color:"#e8320a"}}>{hs.toFixed(1)} hs</td>
+                              <td style={{color:"#666"}}>{cant}</td>
+                              <td><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{height:6,borderRadius:3,background:"#23263a",flex:1}}><div style={{height:"100%",borderRadius:3,background:"#e8320a",width:`${(hs/maxHs)*100}%`,transition:"width 0.5s"}}/></div></div></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
                 <div className="card">
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:18,marginBottom:16,letterSpacing:"0.04em"}}>📋 HORAS → IGS "GESTIÓN DE HORAS"</div>
                   <table>
                     <thead><tr><th>Campo en el IGS</th><th>Total acumulado</th><th>Distribución</th></tr></thead>
                     <tbody>
                       {TIPOS_HORAS.map(t=>{
-                        const total = TIPOS_HORAS.reduce((s,tt)=>s+(totalesIGS[tt.key]||0),0);
-                        const pct = total>0?((totalesIGS[t.key]/total)*100).toFixed(1):0;
-                        return (
+                        const total=TIPOS_HORAS.reduce((s,tt)=>s+(totalesIGS[tt.key]||0),0);
+                        const pct=total>0?((totalesIGS[t.key]/total)*100).toFixed(1):0;
+                        return(
                           <tr key={t.key}>
                             <td style={{color:"#aaa"}}>{t.igs}</td>
                             <td style={{fontWeight:700,color:totalesIGS[t.key]>0?"#e8e8e8":"#444"}}>{totalesIGS[t.key]>0?`${totalesIGS[t.key].toFixed(1)} hs`:"—"}</td>
@@ -286,13 +342,12 @@
               </div>
             )}
 
-            {/* === HISTORIAL === */}
-            {view==="admin" && (
+            {view==="admin"&&(
               <div className="fade-up" style={{display:"flex",flexDirection:"column",gap:20}}>
                 <div className="card" style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
                   <div>
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:22,letterSpacing:"0.04em"}}>HISTORIAL DE PARTES</div>
-                    <div style={{fontSize:12,color:"#555",marginTop:2}}>{partes.length} partes en total</div>
+                    <div style={{fontSize:12,color:"#555",marginTop:2}}>{partes.length} partes en total{pendientes.length>0&&` · ${pendientes.length} pendientes de sincronizar`}</div>
                   </div>
                   <input type="month" value={filterMes} onChange={e=>setFilterMes(e.target.value)} style={{width:"auto"}}/>
                 </div>
@@ -303,13 +358,14 @@
                     {[...partesDelMes].reverse().map(p=>{
                       const tagClass={GTIA:"tag-gtia",REP:"tag-rep",SAL:"tag-sal",MTM:"tag-mtm",USA:"tag-usa"}[p.tipo_os]||"tag-rep";
                       const totalHs=TIPOS_HORAS.reduce((s,t)=>s+(parseFloat(p[t.key])||0),0);
-                      return (
-                        <div key={p.id} className="card" style={{padding:"18px 22px"}}>
+                      return(
+                        <div key={p.id} className="card" style={{padding:"18px 22px",borderColor:p.syncPending?"rgba(251,191,36,0.3)":"#23263a"}}>
                           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
                             <div style={{flex:1}}>
                               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,flexWrap:"wrap"}}>
                                 <span className={`tag ${tagClass}`}>{p.tipo_os}</span>
                                 {p.guardia==="Sí"&&<span className="tag" style={{background:"rgba(232,50,10,0.15)",color:"#e8320a"}}>🚨 Guardia</span>}
+                                {p.syncPending&&<span className="tag" style={{background:"rgba(251,191,36,0.15)",color:"#fbbf24"}}>⏳ Pendiente</span>}
                                 <span style={{fontWeight:700,fontSize:15}}>{p.tecnico}</span>
                                 <span style={{color:"#555",fontSize:13}}>{new Date(p.fecha+"T12:00:00").toLocaleDateString("es-AR",{day:"numeric",month:"short"})}</span>
                                 {p.sucursal&&<span style={{fontSize:12,color:"#555",marginLeft:"auto"}}>📍 {p.sucursal}</span>}
